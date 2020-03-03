@@ -19,6 +19,6 @@ $fanbox->sessionId($session);
 $posts = $fanbox->getPosts($userId);
 $fanbox->downloadPosts($posts);
 
-// images will storage in download directory, named with the format: ${postId}-${title}-${order}.${ext}
+// images will be storaged in download directory, named with the format: ${postId}-${title}-${order}.${ext}
 
 ```
