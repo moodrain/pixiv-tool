@@ -11,5 +11,7 @@
         "psr-4": {
             "PixivTool\\": "src/"
         }
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
