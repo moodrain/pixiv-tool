@@ -1,36 +1,20 @@
 <?php
 
-require __DIR__ . '/Request.php';
+namespace PixivTool;
+
+use PixivTool\Traits\CurlProxy;
+use PixivTool\Traits\PixivSession;
 
 class Fanbox {
 
-    private $sessionId = null;
-    private $socks5 = null;
-
-    public function sessionId(string $sessionId = null) {
-        if($sessionId === null) {
-            return $this->sessionId;
-        }
-        $this->sessionId = $sessionId;
-    }
-
-    public function socks5(string $socks5 = null) {
-        if($socks5 === null) {
-            return $this->socks5;
-        }
-        $this->socks5 = $socks5;
-    }
+    use PixivSession, CurlProxy;
 
     public function getPosts(int $userId) {
         $nextUrl = null;
         $images = [];
         do {
-            $req = new Request;
-            $req->headers([
-                'origin' => 'https://www.pixiv.net',
-                'cookie' => 'PHPSESSID=' . $this->sessionId,
-            ]);
-            $this->socks5 && $req->socks5($this->socks5);
+            $req = $this->getReq();
+            $req->header(['origin' => 'https://www.pixiv.net']);
             if(! $nextUrl) {
                 $req->url("https://fanbox.pixiv.net/api/post.listCreator");
                 $req->query([
@@ -40,8 +24,7 @@ class Fanbox {
             } else {
                 $req->url($nextUrl);
             }
-            $rs = $req->get();
-            $rs = json_decode($rs, true);
+            $rs = $req->accept('json')->get();
             $images = array_merge($images, $rs['body']['items']);
             $nextUrl = $rs['body']['nextUrl'];
         } while($nextUrl);
@@ -72,18 +55,18 @@ class Fanbox {
                     continue;
                 }
                 echo '.';
-                $req = new Request;
-                $this->socks5 && $req->socks5($this->socks5);
-                $req->url($image['originalUrl']);
-                $req->headers([
-                    'cookie' => 'PHPSESSID=' . $this->sessionId,
-                ]);
-                try {
-                    file_put_contents($file, $req->get());
-                } catch (Exception $e) {
-                    $errors[] = $id . '-' . $index;
-                }
+                $req = $this->getReq($image['originalUrl']);
+                file_put_contents($file, $req->get());
+                ! $req->error()->ok() && $errors[] = $id . '-' . $index;
             }
         }
     }
+
+    private function getReq(string $url = null) {
+        $req = $this->getCurl();
+        $req->url($url);
+        $req->cookie(['PHPSESSID' => $this->sessionId]);
+        return $req;
+    }
+
 }

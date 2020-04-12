@@ -1,0 +1,11 @@
+{
+    "require": {
+        "moodrain/moodrain": "^1.4",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "PixivTool\\": "src/"
+        }
+    }
+}
