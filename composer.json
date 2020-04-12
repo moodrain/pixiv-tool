@@ -1,4 +1,8 @@
 {
+    "name": "moodrain/pixiv-tool",
+    "type": "library",
+    "description": "simply tool for pixiv and pixiv-fanbox",
+    "license": "MIT",
     "require": {
         "moodrain/moodrain": "^1.4",
         "ext-json": "*"
