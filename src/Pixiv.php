@@ -34,6 +34,61 @@ class Pixiv {
             'is_first_page' => 0,
         ])->accept('json')->get();
         $works = array_values($rs['body']['works']);
+        return $this->handleWorks($works);
+    }
+
+    public function getWorks(int $userId, int $page = 1, int $limit = 20) {
+        $workIds = $this->getWorkIds($userId, $page, $limit);
+        return $this->getWorkByIds($userId, $workIds);
+    }
+    
+    public function getWatches(int $userId, bool $hide = false, int $page = 1, int $limit = 20) {
+        $req = $this->getReq("https://www.pixiv.net/ajax/user/$userId/following");
+        $req->query([
+            'rest' => $hide ? 'hide' : 'show',
+            'offset' => ($page - 1) * $limit,
+            'limit' => $limit,
+        ]);
+        $rs = $req->accept('json')->get();
+        $count = $rs['body']['total'];
+        $watches = $rs['body']['users'];
+        $return = [];
+        foreach($watches as $watch) {
+            $w = [];
+            $w['id'] = $watch['userId'];
+            $w['name'] = $watch['userName'];
+            $w['avatar'] = $watch['profileImageUrl'];
+            $w['detail'] = $watch['userComment'];
+            $w['works'] = $this->handleWorks($watch['illusts']);
+            $return[] = $w;
+        }
+        return [
+            'count' => $count,
+            'watches' => $return,
+        ];
+    }
+
+    public function getAllWatches(int $userId, bool $hide = false) {
+        $return = [];
+        $page = 1;
+        $limit = 100;
+        $info = $this->getWatches($userId, $hide, $page++, $limit);
+        $return[] = $info['watches'];
+        $count = $info['count'];
+        while($count > $limit * $page) {
+            $return[] = $this->getWatches($userId, $hide, $page++, $limit)['watches'];
+        }
+        return $return;
+    }
+
+    private function getReq(string $url = null) {
+        $req = $this->getCurl();
+        $req->url($url);
+        $req->cookie(['PHPSESSID' => $this->sessionId]);
+        return $req;
+    }
+
+    private function handleWorks(array $works) {
         $return = [];
         foreach($works as $work) {
             if($work['xRestrict'] && ! $this->showRestrict()) {
@@ -53,18 +108,6 @@ class Pixiv {
             $return[] = $w;
         }
         return $return;
-    }
-
-    public function getWorks(int $userId, int $page = 1, int $limit = 20) {
-        $workIds = $this->getWorkIds($userId, $page, $limit);
-        return $this->getWorkByIds($userId, $workIds);
-    }
-
-    private function getReq(string $url = null) {
-        $req = $this->getCurl();
-        $req->url($url);
-        $req->cookie(['PHPSESSID' => $this->sessionId]);
-        return $req;
     }
 
     private function thumbToUrl(string $url, int $page = 0) {
