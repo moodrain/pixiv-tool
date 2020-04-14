@@ -73,7 +73,7 @@ class Pixiv {
         $page = 1;
         $limit = 100;
         $info = $this->getWatches($userId, $hide, $page++, $limit);
-        $return[] = $info['watches'];
+        $return = array_merge($return, $info['watches']);
         $count = $info['count'];
         while($count > $limit * $page) {
             $return[] = $this->getWatches($userId, $hide, $page++, $limit)['watches'];
