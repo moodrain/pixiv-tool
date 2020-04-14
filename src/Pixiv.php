@@ -105,6 +105,7 @@ class Pixiv {
             $w['count'] = $work['pageCount'];
             $w['tags'] = $work['tags'];
             $w['gif'] = $work['illustType'] === 0 ? 0 : 1;
+            $w['restrict'] = $work['xRestrict'];
             $return[] = $w;
         }
         return $return;
