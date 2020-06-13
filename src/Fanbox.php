@@ -9,16 +9,16 @@ class Fanbox {
 
     use PixivSession, CurlProxy;
 
-    public function getPosts(int $userId) {
+    public function getPosts($userId) {
         $nextUrl = null;
         $images = [];
         do {
             $req = $this->getReq();
-            $req->header(['origin' => 'https://www.pixiv.net']);
+            $req->header(['origin' => 'https://www.fanbox.cc']);
             if(! $nextUrl) {
-                $req->url("https://fanbox.pixiv.net/api/post.listCreator");
+                $req->url("https://api.fanbox.cc/post.listCreator");
                 $req->query([
-                    'userId' => $userId,
+                    'creatorId' => $userId,
                     'limit' => 100,
                 ]);
             } else {
@@ -31,8 +31,8 @@ class Fanbox {
         return $images;
     }
 
-    public function savePostsJson(int $userId) {
-        file_put_contents($userId . '.json', json_encode($this->getPosts($userId)));
+    public function savePostsJson($userId) {
+        file_put_contents($userId . '.json', json_encode($this->getPosts($userId)), JSON_UNESCAPED_UNICODE);
     }
 
     public function downloadPosts(array $posts) {
@@ -65,7 +65,7 @@ class Fanbox {
     private function getReq(string $url = null) {
         $req = $this->getCurl();
         $req->url($url);
-        $req->cookie(['PHPSESSID' => $this->sessionId]);
+        $req->cookie(['FANBOXSESSID' => $this->sessionId]);
         return $req;
     }
 
