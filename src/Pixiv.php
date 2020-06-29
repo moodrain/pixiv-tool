@@ -14,7 +14,7 @@ class Pixiv {
         $req = $this->getReq();
         $req->url("https://www.pixiv.net/ajax/user/$userId/profile/all");
         $rs = $req->accept('json')->get();
-        $workIds = array_merge(array_keys($rs['body']['illusts']), array_keys($rs['body']['manga']));
+        $workIds = array_merge(array_keys($rs['body']['illusts'] ?? []), array_keys($rs['body']['manga'] ?? []));
         usort($workIds, function($a, $b) {
             return $b - $a;
         });
