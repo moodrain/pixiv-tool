@@ -39,7 +39,7 @@ class Fanbox {
         $finish = 1;
         $errors = [];
         $dir = $dir ?? 'download';
-        @mkdir($dir);
+        @mkdir($dir, 0777, true);
         foreach($posts as $post) {
             echo PHP_EOL . $finish++ . '/' . count($posts) . ' ';
             if($post['type'] != 'image') {
