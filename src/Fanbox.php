@@ -35,10 +35,11 @@ class Fanbox {
         file_put_contents($userId . '.json', json_encode($this->getPosts($userId)), JSON_UNESCAPED_UNICODE);
     }
 
-    public function downloadPosts(array $posts) {
+    public function downloadPosts(array $posts, $dir = null) {
         $finish = 1;
         $errors = [];
-        @mkdir('download');
+        $dir = $dir ?? 'download';
+        @mkdir($dir);
         foreach($posts as $post) {
             echo PHP_EOL . $finish++ . '/' . count($posts) . ' ';
             if($post['type'] != 'image') {
@@ -50,7 +51,7 @@ class Fanbox {
             !$images && $errors[] = $id;
             foreach($images as $index => $image) {
                 $ext = pathinfo($image['originalUrl'])['extension'];
-                $file = 'download/' . $id . '-' . $title . '-' . ($index + 1) . '.' . $ext;
+                $file = $dir . '/' . $id . '-' . $title . '-' . ($index + 1) . '.' . $ext;
                 if(file_exists($file)) {
                     continue;
                 }
