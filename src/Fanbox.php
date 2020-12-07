@@ -4,10 +4,11 @@ namespace PixivTool;
 
 use PixivTool\Traits\CurlProxy;
 use PixivTool\Traits\PixivSession;
+use PixivTool\Traits\FileName;
 
 class Fanbox {
 
-    use PixivSession, CurlProxy;
+    use PixivSession, CurlProxy, FileName;
 
     public function getPosts($userId) {
         $nextUrl = null;
@@ -51,7 +52,7 @@ class Fanbox {
             !$images && $errors[] = $id;
             foreach($images as $index => $image) {
                 $ext = pathinfo($image['originalUrl'])['extension'];
-                $file = $dir . '/' . $id . '-' . $title . '-' . ($index + 1) . '.' . $ext;
+                $file = $dir . '/' . $id . '-' . $this->trimFileName($title) . '-' . ($index + 1) . '.' . $ext;
                 if(file_exists($file)) {
                     continue;
                 }
