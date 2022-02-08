@@ -10,7 +10,8 @@ class Pixiv {
 
     use PixivSession, CurlProxy, Restrict;
 
-    public function getAllWorkIds(int $userId) {
+    public function getAllWorkIds($userId)
+    {
         $req = $this->getReq();
         $req->url("https://www.pixiv.net/ajax/user/$userId/profile/all");
         $rs = $req->accept('json')->get();
@@ -21,12 +22,14 @@ class Pixiv {
         return $workIds;
     }
 
-    public function getWorkIds(int $userId, int $page = 1, int $limit = 20) {
+    public function getWorkIds($userId, $page = 1, $limit = 20)
+    {
         $workIds = $this->getAllWorkIds($userId);
         return array_slice($workIds, ($page - 1) * $limit, $limit);
     }
 
-    public function getWorkByIds(int $userId, array $workIds) {
+    public function getWorkByIds($userId, $workIds)
+    {
         $req = $this->getReq("https://www.pixiv.net/ajax/user/$userId/profile/illusts");
         $rs = $req->query([
             'ids' => $workIds,
@@ -37,12 +40,14 @@ class Pixiv {
         return $this->handleWorks($works);
     }
 
-    public function getWorks(int $userId, int $page = 1, int $limit = 20) {
+    public function getWorks($userId, $page = 1, $limit = 20)
+    {
         $workIds = $this->getWorkIds($userId, $page, $limit);
         return $this->getWorkByIds($userId, $workIds);
     }
     
-    public function getWatches(int $userId, bool $hide = false, int $page = 1, int $limit = 20) {
+    public function getWatches($userId, $hide = false, $page = 1, $limit = 20)
+    {
         $req = $this->getReq("https://www.pixiv.net/ajax/user/$userId/following");
         $req->query([
             'rest' => $hide ? 'hide' : 'show',
@@ -68,7 +73,8 @@ class Pixiv {
         ];
     }
 
-    public function getAllWatches(int $userId, bool $hide = false) {
+    public function getAllWatches($userId, $hide = false)
+    {
         $return = [];
         $page = 1;
         $limit = 100;
@@ -81,14 +87,16 @@ class Pixiv {
         return $return;
     }
 
-    private function getReq(string $url = null) {
+    private function getReq($url = null)
+    {
         $req = $this->getCurl();
         $req->url($url);
         $req->cookie(['PHPSESSID' => $this->sessionId]);
         return $req;
     }
 
-    private function handleWorks(array $works) {
+    private function handleWorks($works)
+    {
         $return = [];
         foreach($works as $work) {
             if($work['xRestrict'] && ! $this->showRestrict()) {
@@ -111,7 +119,8 @@ class Pixiv {
         return $return;
     }
 
-    private function thumbToUrl(string $url, int $page = 0) {
+    private function thumbToUrl($url, $page = 0)
+    {
         $matches = [];
         $pattern = '~https://i.pximg.net/c/250x250_80_a2/img-master/img/(....)/(..)/(..)/(..)/(..)/(..)/(.*)_p0_square1200.(.*)~';
         preg_match($pattern, $url, $matches);

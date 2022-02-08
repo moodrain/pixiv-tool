@@ -19,4 +19,4 @@ $fanbox = new Fanbox;
 $fanbox->sessionId($session);
 $fanbox->socks5('127.0.0.1:2333');
 $posts = $fanbox->getPosts($fanboxId);
-$fanbox->downloadPosts($posts);
+$fanbox->downloadPosts($fanboxId, 'path/to/save');

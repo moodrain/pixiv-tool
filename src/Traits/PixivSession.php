@@ -6,8 +6,9 @@ trait PixivSession {
 
     private $sessionId = null;
 
-    public function sessionId(string $sessionId = null) {
-        if($sessionId === null) {
+    public function sessionId($sessionId = null)
+    {
+        if ($sessionId === null) {
             return $this->sessionId;
         }
         $this->sessionId = $sessionId;
