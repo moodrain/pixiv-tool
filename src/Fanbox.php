@@ -100,7 +100,7 @@ class Fanbox {
         $errors = [];
         $handler = function($post) use ($dir, $jsonDir, &$errors, &$total, &$finish) {
             $total++;
-            $file = $dir . '/' . $post['id'] . ' - ' . $this->trimFileName($post['title']);
+            $prefix = $dir . '/' . $post['id'] . ' - ' . $this->trimFileName($post['title']);
             $bodyImages = $post['body']['images'] ?? [];
             $bodyFiles = $post['body']['files'] ?? [];
             $bodyImageMap = array_values($post['body']['imageMap'] ?? []);
@@ -110,6 +110,7 @@ class Fanbox {
             $pass = true;
             foreach ($items as $index => $item) {
                 $no = $index + 1;
+                $file = $prefix;
                 $count > 1 && $file .= (' - ' . $no);
                 ! empty($item['name']) && $file .= (' - ' . $item['name']);
                 $file .= ('.' . $item['extension']);
