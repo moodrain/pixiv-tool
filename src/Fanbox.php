@@ -103,8 +103,8 @@ class Fanbox {
             $file = $dir . '/' . $post['id'] . ' - ' . $this->trimFileName($post['title']);
             $bodyImages = $post['body']['images'] ?? [];
             $bodyFiles = $post['body']['files'] ?? [];
-            $bodyImageMap = array_values($post['body']['imageMap']) ?? [];
-            $bodyFileMap = array_values($post['body']['fileMap']) ?? [];
+            $bodyImageMap = array_values($post['body']['imageMap'] ?? []);
+            $bodyFileMap = array_values($post['body']['fileMap'] ?? []);
             $items = array_merge($bodyImages, $bodyFiles, $bodyImageMap, $bodyFileMap);
             $count = count($items);
             $pass = true;

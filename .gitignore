@@ -1,3 +1,5 @@
 /.idea/
 index.php
 /vendor
+/download
+main.php
