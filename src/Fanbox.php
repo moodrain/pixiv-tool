@@ -125,7 +125,7 @@ class Fanbox {
                     continue;
                 }
                 $content = $this->getReq($url)->get();
-                if (strlen($content) < 100) {
+                if (strlen($content) < 500) {
                     $pass = false;
                     $errors[] = compact('post', 'item', 'no');
                     continue;
