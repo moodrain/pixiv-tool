@@ -58,7 +58,6 @@ class Pixiv {
                     $ext = pathinfo($image)['extension'];
                     $name = $prefix . $noStr . '.' . $ext;
                     if (file_exists($name)) {
-                        $finish++;
                         echo '.';
                         continue;
                     }
