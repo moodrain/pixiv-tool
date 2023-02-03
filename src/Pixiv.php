@@ -49,6 +49,7 @@ class Pixiv {
             $posts = $this->getPostByIds($userId, $postIdChunk);
             $pass = true;
             foreach ($posts as $post) {
+                $pass = true;
                 file_put_contents($jsonDir . '/' . $post['id'] . '.json', json_encode($post, JSON_UNESCAPED_UNICODE));
                 $images = $this->allPageUrl($post['imageOriginUrl'], $post['count']);
                 $prefix = $dir . '/' . $post['id'] . ' - ' . $this->trimFileName($post['title']);
@@ -63,10 +64,13 @@ class Pixiv {
                     }
                     $content = $this->getReq($image)->header(['referer' => 'https://www.pixiv.net/'])->get();
                     if (strlen($content) < 500) {
-                        $pass = false;
-                        $errors[] = $post['id'] . '-' . $no;
-                        echo '!';
-                        continue;
+                        $content = $this->getReq(str_replace('jpg', 'png', $image))->header(['referer' => 'https://www.pixiv.net/'])->get();
+                        if (strlen($content) < 500) {
+                            $pass = false;
+                            $errors[] = $post['id'] . '-' . $no;
+                            echo '!';
+                            continue;
+                        }
                     }
                     file_put_contents($name, $content);
                     echo '.';
@@ -74,7 +78,7 @@ class Pixiv {
                 $pass && $finish++;
             }
         }
-        echo join(PHP_EOL, $errors);
+        echo PHP_EOL, join(PHP_EOL, $errors);
         echo PHP_EOL, "Download $userId finish: $finish / " . count($postIds);
     }
 
@@ -132,26 +136,26 @@ class Pixiv {
         return $req;
     }
 
-    private function handlePost($works)
+    private function handlePost($posts)
     {
         $return = [];
-        foreach($works as $work) {
-            if($work['xRestrict'] && ! $this->showRestrict()) {
+        foreach($posts as $post) {
+            if($post['xRestrict'] && ! $this->showRestrict()) {
                 continue;
             }
-            $w = [];
-            $w['id'] = $work['id'];
-            $w['title'] = $work['title'];
-            $w['url'] = 'https://www.pixiv.net/artworks/' . $work['id'];
-            $w['imageThumbUrl'] = $work['url'];
-            $url = $this->thumbToUrl($work['url']);
-            $w['imageMasterUrl'] = $url['master'];
-            $w['imageOriginUrl'] = $url['origin'];
-            $w['count'] = $work['pageCount'];
-            $w['tags'] = $work['tags'];
-            $w['gif'] = $work['illustType'] === 0 ? 0 : 1;
-            $w['restrict'] = $work['xRestrict'];
-            $return[] = $w;
+            $p = [];
+            $p['id'] = $post['id'];
+            $p['title'] = $post['title'];
+            $p['url'] = 'https://www.pixiv.net/artworks/' . $post['id'];
+            $p['imageThumbUrl'] = $post['url'];
+            $url = $this->thumbToUrl($post['url']);
+            $p['imageMasterUrl'] = $url['master'];
+            $p['imageOriginUrl'] = $url['origin'];
+            $p['count'] = $post['pageCount'];
+            $p['tags'] = $post['tags'];
+            $p['type'] = $post['illustType'];
+            $p['restrict'] = $post['xRestrict'];
+            $return[] = $p;
         }
         return $return;
     }
@@ -182,11 +186,11 @@ class Pixiv {
                 'origin' => '',
             ];
         }
-        $workId = $matches[7];
+        $postId = $matches[7];
         $ext = $matches[8];
         $dateStr = implode('/', array_slice($matches, 1, count($matches) - 3));
-        $masterUrl = "https://i.pximg.net/img-master/img/${dateStr}/${workId}_p0_master1200.$ext";
-        $originUrl = "https://i.pximg.net/img-original/img/${dateStr}/${workId}_p0.$ext";
+        $masterUrl = "https://i.pximg.net/img-master/img/${dateStr}/${postId}_p0_master1200.$ext";
+        $originUrl = "https://i.pximg.net/img-original/img/${dateStr}/${postId}_p0.$ext";
         return [
             'master' => $masterUrl,
             'origin' => $originUrl,
