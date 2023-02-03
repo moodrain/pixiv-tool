@@ -3,49 +3,82 @@
 namespace PixivTool;
 
 use PixivTool\Traits\CurlProxy;
+use PixivTool\Traits\FileName;
 use PixivTool\Traits\PixivSession;
 use PixivTool\Traits\Restrict;
 
 class Pixiv {
 
-    use PixivSession, CurlProxy, Restrict;
+    use PixivSession, CurlProxy, Restrict, FileName;
 
-    public function getAllWorkIds($userId)
+    public function getAllPostIds($userId)
     {
         $req = $this->getReq();
         $req->url("https://www.pixiv.net/ajax/user/$userId/profile/all");
         $rs = $req->accept('json')->get();
-        $workIds = array_merge(array_keys($rs['body']['illusts'] ?? []), array_keys($rs['body']['manga'] ?? []));
-        usort($workIds, function($a, $b) {
+        $postIds = array_merge(array_keys($rs['body']['illusts'] ?? []), array_keys($rs['body']['manga'] ?? []));
+        usort($postIds, function($a, $b) {
             return $b - $a;
         });
-        return $workIds;
+        return $postIds;
     }
 
-    public function getWorkIds($userId, $page = 1, $limit = 20)
-    {
-        $workIds = $this->getAllWorkIds($userId);
-        return array_slice($workIds, ($page - 1) * $limit, $limit);
-    }
-
-    public function getWorkByIds($userId, $workIds)
+    public function getPostByIds($userId, $postIds)
     {
         $req = $this->getReq("https://www.pixiv.net/ajax/user/$userId/profile/illusts");
         $rs = $req->query([
-            'ids' => $workIds,
+            'ids' => $postIds,
             'work_category' => 'illust',
             'is_first_page' => 0,
         ])->accept('json')->get();
-        $works = array_values($rs['body']['works']);
-        return $this->handleWorks($works);
+        $posts = array_values($rs['body']['works']);
+        return $this->handlePost($posts);
     }
 
-    public function getWorks($userId, $page = 1, $limit = 20)
+    public function downloadPosts($userId, $dir = './download')
     {
-        $workIds = $this->getWorkIds($userId, $page, $limit);
-        return $this->getWorkByIds($userId, $workIds);
+        $dir = rtrim($dir, DIRECTORY_SEPARATOR);
+        $jsonDir = $dir . '/post-jsons';
+        @mkdir($dir, 0777, true);
+        @mkdir($jsonDir, 0777, true);
+        $finish = 0;
+        $errors = [];
+        $postIds = $this->getAllPostIds($userId);
+        $postIdChunks = array_chunk($postIds, 20);
+        foreach ($postIdChunks as $postIdChunk) {
+            $posts = $this->getPostByIds($userId, $postIdChunk);
+            $pass = true;
+            foreach ($posts as $post) {
+                file_put_contents($jsonDir . '/' . $post['id'] . '.json', json_encode($post, JSON_UNESCAPED_UNICODE));
+                $images = $this->allPageUrl($post['imageOriginUrl'], $post['count']);
+                $prefix = $dir . '/' . $post['id'] . ' - ' . $this->trimFileName($post['title']);
+                foreach ($images as $index => $image) {
+                    $no = $index + 1;
+                    $noStr = $post['count'] > 1 ? (' - ' . $no) : '';
+                    $ext = pathinfo($image)['extension'];
+                    $name = $prefix . $noStr . '.' . $ext;
+                    if (file_exists($name)) {
+                        $finish++;
+                        echo '.';
+                        continue;
+                    }
+                    $content = $this->getReq($image)->header(['referer' => 'https://www.pixiv.net/'])->get();
+                    if (strlen($content) < 100) {
+                        $pass = false;
+                        $errors[] = $post['id'] . '-' . $no;
+                        echo '!';
+                        continue;
+                    }
+                    file_put_contents($name, $content);
+                    echo '.';
+                }
+                $pass && $finish++;
+            }
+        }
+        echo join(PHP_EOL, $errors);
+        echo PHP_EOL, "Download $userId finish: $finish / " . count($postIds);
     }
-    
+
     public function getWatches($userId, $hide = false, $page = 1, $limit = 20)
     {
         $req = $this->getReq("https://www.pixiv.net/ajax/user/$userId/following");
@@ -64,7 +97,7 @@ class Pixiv {
             $w['name'] = $watch['userName'];
             $w['avatar'] = $watch['profileImageUrl'];
             $w['detail'] = $watch['userComment'];
-            $w['works'] = $this->handleWorks($watch['illusts']);
+            $w['posts'] = $this->handlePost($watch['illusts']);
             $return[] = $w;
         }
         return [
@@ -91,11 +124,16 @@ class Pixiv {
     {
         $req = $this->getCurl();
         $req->url($url);
-        $req->cookie(['PHPSESSID' => $this->sessionId]);
+        $req->cookie([
+            'PHPSESSID' => $this->sessionId,
+        ]);
+        $req->header([
+            'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
+        ]);
         return $req;
     }
 
-    private function handleWorks($works)
+    private function handlePost($works)
     {
         $return = [];
         foreach($works as $work) {
@@ -105,7 +143,7 @@ class Pixiv {
             $w = [];
             $w['id'] = $work['id'];
             $w['title'] = $work['title'];
-            $w['url'] = 'https://www.pixiv.net/artworks/' . $work['illustId'];
+            $w['url'] = 'https://www.pixiv.net/artworks/' . $work['id'];
             $w['imageThumbUrl'] = $work['url'];
             $url = $this->thumbToUrl($work['url']);
             $w['imageMasterUrl'] = $url['master'];
@@ -119,7 +157,7 @@ class Pixiv {
         return $return;
     }
 
-    private function thumbToUrl($url, $page = 0)
+    private function thumbToUrl($url)
     {
         $matches = [];
         $pattern = '~https://i.pximg.net/c/250x250_80_a2/img-master/img/(....)/(..)/(..)/(..)/(..)/(..)/(.*)_p0_square1200.(.*)~';
@@ -148,12 +186,22 @@ class Pixiv {
         $workId = $matches[7];
         $ext = $matches[8];
         $dateStr = implode('/', array_slice($matches, 1, count($matches) - 3));
-        $masterUrl = "https://i.pximg.net/img-master/img/${dateStr}/${workId}_p${page}_master1200.$ext";
-        $originUrl = "https://i.pximg.net/img-original/img/${dateStr}/${workId}_p${page}.$ext";
+        $masterUrl = "https://i.pximg.net/img-master/img/${dateStr}/${workId}_p0_master1200.$ext";
+        $originUrl = "https://i.pximg.net/img-original/img/${dateStr}/${workId}_p0.$ext";
         return [
             'master' => $masterUrl,
             'origin' => $originUrl,
         ];
+    }
+
+    private function allPageUrl($url, $page)
+    {
+        $offset = strpos($url,  '_p');
+        $rs = [];
+        for ($p = 0; $p < $page; $p++) {
+            $rs[] = substr_replace($url, '_p' . $p, $offset, 3);
+        }
+        return $rs;
     }
 
 }
