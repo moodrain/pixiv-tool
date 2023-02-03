@@ -63,7 +63,7 @@ class Pixiv {
                         continue;
                     }
                     $content = $this->getReq($image)->header(['referer' => 'https://www.pixiv.net/'])->get();
-                    if (strlen($content) < 100) {
+                    if (strlen($content) < 500) {
                         $pass = false;
                         $errors[] = $post['id'] . '-' . $no;
                         echo '!';
