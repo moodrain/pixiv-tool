@@ -38,7 +38,7 @@ class Fanbox {
         while ($nextPostId) {
             $post = $this->getPost($nextPostId);
             $handler($post);
-            $nextPostId = $post['nextPost']['id'] ?? null;
+            $nextPostId = $post['prevPost']['id'] ?? null;
         }
     }
 
